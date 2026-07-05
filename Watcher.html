@@ -5,18 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Видеотека</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #14151a;
-    --panel: #1d1e24;
-    --panel-2: #23242b;
-    --paper: #ece9e2;
-    --paper-dim: #a7a49c;
-    --amber: #e3a24c;
-    --teal: #4e8c82;
-    --line: #33343c;
-    --danger: #c96a5a;
+    --bg: #121214;
+    --panel: #1a1a1e;
+    --panel-2: #212126;
+    --paper: #e9e9ec;
+    --paper-dim: #8d8d95;
+    --amber: #89a6cf;
+    --teal: #a99177;
+    --line: #2b2b30;
+    --danger: #c96a63;
+    --ink: #14161c;
   }
 
   *{ box-sizing: border-box; }
@@ -59,7 +60,7 @@
   .tab-page.active{ display: block; }
 
   .count{
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     color: var(--paper-dim);
     font-size: 13px;
   }
@@ -75,7 +76,7 @@
     background: var(--panel);
     border: 1px solid var(--line);
     color: var(--paper-dim);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 12.5px;
     padding: 8px 14px;
     border-radius: 8px;
@@ -83,7 +84,7 @@
     transition: all 0.12s ease;
   }
   .period-btn:hover{ border-color: var(--amber); color: var(--paper); }
-  .period-btn.active{ background: var(--amber); border-color: var(--amber); color: #1a1408; font-weight: 600; }
+  .period-btn.active{ background: var(--amber); border-color: var(--amber); color: var(--ink); font-weight: 600; }
 
   /* ---- Stats: summary ---- */
   .stats-summary{
@@ -99,14 +100,14 @@
     padding: 20px;
   }
   .stat-value{
-    font-family: 'Fraunces', serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-weight: 600;
     font-size: 28px;
     color: var(--paper);
     margin-bottom: 4px;
   }
   .stat-label{
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 11.5px;
     color: var(--paper-dim);
     text-transform: uppercase;
@@ -164,14 +165,14 @@
     min-height: 2px;
   }
   .bar-label{
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 9.5px;
     color: var(--paper-dim);
     margin-top: 8px;
     white-space: nowrap;
   }
   .bar-value{
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 9px;
     color: var(--paper-dim);
     opacity: 0.8;
@@ -208,7 +209,7 @@
     border-radius: 5px;
   }
   .cat-value{
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
     color: var(--paper-dim);
     flex-shrink: 0;
@@ -220,7 +221,7 @@
     background: var(--panel-2);
     border: 1px solid var(--line);
     color: var(--paper-dim);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
     padding: 4px 6px;
     border-radius: 6px;
@@ -247,14 +248,14 @@
     border: none;
     outline: none;
     color: var(--paper);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 14px;
     padding: 10px 12px;
   }
   .loader input::placeholder{ color: var(--paper-dim); }
   .loader button{
     background: var(--amber);
-    color: #1a1408;
+    color: var(--ink);
     border: none;
     border-radius: 9px;
     padding: 0 22px;
@@ -269,7 +270,7 @@
   .loader button:disabled{ opacity: 0.5; cursor: default; transform: none; }
 
   .status-msg{
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 12.5px;
     padding: 0 4px 20px;
     min-height: 18px;
@@ -324,7 +325,7 @@
     transition: width 0.4s ease;
   }
   .watch-progress-pct{
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 11.5px;
     color: var(--paper-dim);
     min-width: 36px;
@@ -332,7 +333,7 @@
     flex-shrink: 0;
   }
   .watch-progress-label{
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
     color: var(--paper-dim);
     text-transform: uppercase;
@@ -340,7 +341,7 @@
     flex-shrink: 0;
   }
   .log-watch-btn{
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
     letter-spacing: 0.02em;
     padding: 4px 10px;
@@ -352,7 +353,7 @@
     flex-shrink: 0;
     transition: background 0.12s ease, color 0.12s ease;
   }
-  .log-watch-btn:hover{ background: var(--amber); color: #1a1408; }
+  .log-watch-btn:hover{ background: var(--amber); color: var(--ink); }
 
   .sprockets{
     width: 22px;
@@ -365,7 +366,7 @@
   }
 
   .num{
-    font-family: 'Fraunces', serif;
+    font-family: 'Space Grotesk', sans-serif;
     font-weight: 600;
     color: var(--paper-dim);
     font-size: 30px;
@@ -377,8 +378,8 @@
   }
 
   .row.pinned{
-    border-color: rgba(227,162,76,0.55);
-    background: linear-gradient(90deg, rgba(227,162,76,0.08), var(--panel) 60%);
+    border-color: rgba(137,166,207,0.5);
+    background: linear-gradient(90deg, rgba(137,166,207,0.08), var(--panel) 60%);
   }
 
   .thumb-frame{
@@ -388,7 +389,7 @@
     margin: 12px 8px;
     border-radius: 8px;
     overflow: hidden;
-    background: #0e0f12;
+    background: #0f0f12;
     border: 1px solid var(--line);
     position: relative;
   }
@@ -403,7 +404,7 @@
     right: 6px;
     background: rgba(10,10,12,0.82);
     color: #fff;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
     letter-spacing: 0.02em;
     padding: 2px 7px;
@@ -413,7 +414,7 @@
     z-index: 2;
     transition: background 0.12s ease;
   }
-  .duration-badge:hover{ background: rgba(227,162,76,0.9); color: #1a1408; }
+  .duration-badge:hover{ background: rgba(137,166,207,0.9); color: var(--ink); }
 
   .info{
     flex: 1;
@@ -438,25 +439,9 @@
     line-height: 1.35;
   }
   .title:hover{ color: var(--amber); }
-  .url-line{
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .url{
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12.5px;
-    color: var(--teal);
-    text-decoration: none;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 320px;
-  }
-  .url:hover{ text-decoration: underline; }
 
   .meta-line{
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 11.5px;
     color: var(--paper-dim);
     display: flex;
@@ -523,14 +508,35 @@
     flex-shrink: 0;
   }
   .pin-btn:hover{ border-color: var(--amber); color: var(--amber); }
-  .pin-btn.active{ background: var(--amber); border-color: var(--amber); color: #1a1408; }
+  .pin-btn.active{ background: var(--amber); border-color: var(--amber); color: var(--ink); }
 
-  .api-key-row{ margin-bottom: 18px; }
+  .catalog-toolbar{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .category-filter{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--paper);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    outline: none;
+    cursor: pointer;
+  }
+  .category-filter:hover{ border-color: var(--amber); }
+
+  .api-key-row{ margin-top: 28px; padding-top: 18px; border-top: 1px dashed var(--line); }
   .api-key-toggle{
     background: transparent;
     border: none;
     color: var(--paper-dim);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 11.5px;
     cursor: pointer;
     padding: 2px 4px;
@@ -562,7 +568,7 @@
     border: 1px solid var(--line);
     border-radius: 8px;
     color: var(--paper);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 12.5px;
     padding: 9px 10px;
     outline: none;
@@ -576,7 +582,7 @@
     padding: 0 14px;
     cursor: pointer;
   }
-  .api-key-panel .save-btn{ background: var(--amber); color: #1a1408; }
+  .api-key-panel .save-btn{ background: var(--amber); color: var(--ink); }
   .api-key-panel .clear-btn{ background: transparent; border: 1px solid var(--line); color: var(--paper-dim); }
 
   .archive-section{
@@ -593,7 +599,7 @@
     cursor: pointer;
     padding: 0 0 20px;
     color: var(--paper-dim);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -618,12 +624,12 @@
     text-align: center;
     padding: 60px 20px;
     color: var(--paper-dim);
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'JetBrains Mono', monospace;
     font-size: 13px;
     border: 1px dashed var(--line);
     border-radius: 14px;
   }
-  .empty b{ color: var(--paper); font-family:'Fraunces', serif; font-weight:600; font-size: 17px; display:block; margin-bottom:8px;}
+  .empty b{ color: var(--paper); font-family:'Space Grotesk', sans-serif; font-weight:600; font-size: 17px; display:block; margin-bottom:8px;}
 
   .skeleton{
     background: linear-gradient(90deg, var(--panel-2) 25%, #2b2c34 37%, var(--panel-2) 63%);
@@ -632,12 +638,63 @@
   }
   @keyframes shimmer{ 0%{background-position: 100% 0;} 100%{background-position: 0 0;} }
 
-  @media (max-width: 560px){
-    .thumb-frame{ width: 120px; height: 68px; margin: 8px 4px; }
-    .num{ width: 34px; font-size: 22px; }
-    .url{ max-width: 140px; }
-    .title{ font-size: 14.5px; }
+  @media (max-width: 640px){
+    body{ padding: 28px 12px 60px; }
+
+    .tabs{ gap: 20px; margin-bottom: 22px; }
+    .tab-btn{ font-size: 14px; }
+
+    .loader{ flex-direction: column; padding: 12px; }
+    .loader button{ padding: 12px; }
+
+    .api-key-panel .row-inline{ flex-direction: column; }
+
+    .stats-summary{ gap: 8px; }
+    .stat-box{ padding: 14px; }
+    .stat-value{ font-size: 22px; }
+
+    .cat-name{ width: 84px; font-size: 12px; }
+
+    .period-switch{ gap: 6px; }
+    .period-btn{ padding: 7px 10px; font-size: 11.5px; }
+
+    .catalog-toolbar{ gap: 8px; }
+    .category-filter{ width: 100%; }
+
+    /* Карточка видео: вместо тесной строки в один ряд —
+       обложка сверху на всю ширину, инфо и кнопки снизу */
+    .row-body{ flex-direction: column; }
+    .sprockets{ display: none; }
+    .num{
+      width: auto;
+      height: auto;
+      font-size: 13px;
+      padding: 8px 12px 0;
+      justify-content: flex-start;
+    }
+    .thumb-frame{
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      margin: 8px 0 0;
+      border-radius: 0;
+    }
+    .info{
+      padding: 10px 14px 6px;
+    }
+    .title{ font-size: 15px; }
     .meta-line{ gap: 8px; font-size: 10.5px; }
+    .category-select{ max-width: none; width: 100%; }
+
+    .actions{
+      flex-direction: row;
+      justify-content: flex-end;
+      padding: 0 14px 14px;
+      gap: 10px;
+    }
+
+    .watch-progress{ flex-wrap: wrap; padding: 10px 14px 12px; }
+    .log-watch-btn{ order: 3; width: 100%; text-align: center; margin-top: 4px; }
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -663,25 +720,12 @@
     </div>
     <div class="status-msg" id="statusMsg"></div>
 
-    <div class="api-key-row">
-      <button class="api-key-toggle" id="apiKeyToggle">⚙ Настроить получение длительности видео</button>
-      <div class="api-key-panel" id="apiKeyPanel" style="display:none;">
-        <p>Чтобы длительность подтягивалась автоматически, нужен бесплатный ключ YouTube Data API (без него длительность можно вписать вручную, кликнув по бейджу на обложке).</p>
-        <div class="row-inline">
-          <input id="apiKeyInput" type="text" placeholder="Вставь свой YouTube API ключ" autocomplete="off">
-          <button class="save-btn" id="apiKeySave">Сохранить</button>
-          <button class="clear-btn" id="apiKeyClear">Очистить</button>
-        </div>
-        <div class="row-inline" style="margin-top:10px;">
-          <button class="clear-btn" id="refreshDurations" style="flex:1;">Обновить длительность у всех видео</button>
-        </div>
-        <div class="row-inline" style="margin-top:10px;">
-          <button class="clear-btn" id="guessCategoriesBtn" style="flex:1;">Определить категории по названию (у видео без категории)</button>
-        </div>
-      </div>
+    <div class="catalog-toolbar">
+      <div class="count" id="countLine"></div>
+      <select class="category-filter" id="categoryFilter">
+        <option value="">Все категории</option>
+      </select>
     </div>
-
-    <div class="count" id="countLine" style="margin-bottom:14px;"></div>
 
     <div class="reel" id="reel"></div>
     <div class="empty" id="emptyState" style="display:none;">
@@ -700,6 +744,24 @@
         <div class="reel" id="archiveReel"></div>
         <div class="empty" id="archiveEmpty" style="display:none;">
           В архиве пока ничего нет.
+        </div>
+      </div>
+    </div>
+
+    <div class="api-key-row">
+      <button class="api-key-toggle" id="apiKeyToggle">⚙ Настроить получение длительности видео</button>
+      <div class="api-key-panel" id="apiKeyPanel" style="display:none;">
+        <p>Чтобы длительность подтягивалась автоматически, нужен бесплатный ключ YouTube Data API (без него длительность можно вписать вручную, кликнув по бейджу на обложке).</p>
+        <div class="row-inline">
+          <input id="apiKeyInput" type="text" placeholder="Вставь свой YouTube API ключ" autocomplete="off">
+          <button class="save-btn" id="apiKeySave">Сохранить</button>
+          <button class="clear-btn" id="apiKeyClear">Очистить</button>
+        </div>
+        <div class="row-inline" style="margin-top:10px;">
+          <button class="clear-btn" id="refreshDurations" style="flex:1;">Обновить длительность у всех видео</button>
+        </div>
+        <div class="row-inline" style="margin-top:10px;">
+          <button class="clear-btn" id="guessCategoriesBtn" style="flex:1;">Определить категории по названию (у видео без категории)</button>
         </div>
       </div>
     </div>
@@ -737,6 +799,7 @@ const reel = document.getElementById('reel');
 const emptyState = document.getElementById('emptyState');
 const statusMsg = document.getElementById('statusMsg');
 const countLine = document.getElementById('countLine');
+const categoryFilterSelect = document.getElementById('categoryFilter');
 const urlInput = document.getElementById('urlInput');
 const addBtn = document.getElementById('addBtn');
 const archiveToggle = document.getElementById('archiveToggle');
@@ -792,6 +855,18 @@ function guessCategory(title){
   }
   return null;
 }
+
+// Наполняем выпадающий список фильтра теми же категориями, что и у карточек видео
+CATEGORY_OPTIONS.forEach(cat => {
+  const opt = document.createElement('option');
+  opt.value = cat;
+  opt.textContent = cat;
+  categoryFilterSelect.appendChild(opt);
+});
+categoryFilterSelect.addEventListener('change', () => {
+  currentCategoryFilter = categoryFilterSelect.value;
+  render();
+});
 const PERIODS = [
   { key: 'today', label: 'Сегодня' },
   { key: '3d', label: '3 дня' },
@@ -800,6 +875,7 @@ const PERIODS = [
   { key: 'all', label: 'Всё время' }
 ];
 let currentPeriod = 'week';
+let currentCategoryFilter = '';
 let videos = [];
 let statsLog = [];
 let ytApiKey = null;
@@ -1269,9 +1345,6 @@ function buildRow(v, num, isArchived){
       </div>
       <div class="info">
         <a class="title" href="${watchUrl}" target="_blank" rel="noopener">${v.pinned && !isArchived ? '📌 ' : ''}${escapeHtml(v.title || 'Без названия')}</a>
-        <div class="url-line">
-          <a class="url" href="${watchUrl}" target="_blank" rel="noopener">${watchUrl}</a>
-        </div>
         <div class="meta-line">${metaBits.join('')}</div>
         <div class="meta-line">${categorySelect}</div>
       </div>
@@ -1288,14 +1361,24 @@ function buildRow(v, num, isArchived){
 }
 
 function render(){
-  const active = videos.filter(v => !v.archived)
+  let active = videos.filter(v => !v.archived)
     .slice()
     .sort((a, b) => (b.pinned === true) - (a.pinned === true));
-  const archived = videos.filter(v => v.archived);
+  let archived = videos.filter(v => v.archived);
+
+  if(currentCategoryFilter){
+    active = active.filter(v => (v.category || '') === currentCategoryFilter);
+    archived = archived.filter(v => (v.category || '') === currentCategoryFilter);
+  }
 
   reel.innerHTML = '';
-  countLine.textContent = active.length ? `В каталоге: ${active.length}` : '';
+  countLine.textContent = active.length
+    ? `В каталоге: ${active.length}${currentCategoryFilter ? ` · ${currentCategoryFilter}` : ''}`
+    : '';
   emptyState.style.display = active.length ? 'none' : 'block';
+  emptyState.innerHTML = currentCategoryFilter
+    ? `<b>Ничего не найдено</b>В категории «${escapeHtml(currentCategoryFilter)}» пока нет видео.`
+    : `<b>Пока пусто</b>Первая ссылка откроет счёт. Вставь её выше.`;
 
   active.forEach((v, i) => {
     reel.appendChild(buildRow(v, i + 1, false));
