@@ -339,6 +339,20 @@
     letter-spacing: 0.06em;
     flex-shrink: 0;
   }
+  .log-watch-btn{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    padding: 4px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--amber);
+    background: transparent;
+    color: var(--amber);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .log-watch-btn:hover{ background: var(--amber); color: #1a1408; }
 
   .sprockets{
     width: 22px;
@@ -630,6 +644,10 @@
     *{ animation: none !important; transition: none !important; }
   }
 </style>
+<!-- Firebase (для синхронизации данных между устройствами через облако) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -804,11 +822,30 @@ function parseDurationToSeconds(text){
   return 0;
 }
 
-function computeWatchedSeconds(v){
-  const totalSec = v.durationSeconds || parseDurationToSeconds(v.duration);
-  if(!totalSec) return 0;
-  const pct = (typeof v.watchedPct === 'number') ? v.watchedPct : 100;
-  return Math.round(totalSec * (Math.min(100, Math.max(0, pct)) / 100));
+// Полная длительность видео в секундах (если известна).
+function getTotalSeconds(v){
+  return v.durationSeconds || parseDurationToSeconds(v.duration) || 0;
+}
+
+// Процент просмотра на основе реально залогированных секунд (v.watchedSeconds).
+// Возвращает null, если длительность видео неизвестна — тогда прогресс не показываем.
+function getWatchedPct(v){
+  const total = getTotalSeconds(v);
+  if(!total) return null;
+  const watched = v.watchedSeconds || 0;
+  return Math.min(100, Math.max(0, (watched / total) * 100));
+}
+
+// Сколько секунд ещё нужно «досчитать» при закрытии (архивации) видео.
+// Если сессии вообще не логировались — как и раньше, считаем, что видео
+// посмотрено полностью. Если сессии уже частично залогированы — досчитываем
+// только остаток до полной длительности (чтобы не задвоить уже записанное).
+function computeArchiveRemainderSeconds(v){
+  const total = getTotalSeconds(v);
+  if(!total) return 0;
+  const logged = v.watchedSeconds || 0;
+  if(logged <= 0) return total;
+  return Math.max(0, total - logged);
 }
 
 function formatHM(totalSeconds){
@@ -823,13 +860,70 @@ function formatShortDate(isoDateStr){
   return `${d}.${m}`;
 }
 
-// Storage layer: uses window.storage when running inside Claude's artifact
-// viewer (persists to your account), and falls back to the browser's own
-// localStorage when the file is opened directly (e.g. downloaded and
-// double-clicked, or hosted somewhere) — so saving works either way.
+// ============================================================
+// ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ (Firebase Realtime Database)
+// ============================================================
+// Чтобы список видео и статистика были одинаковыми на телефоне и на ПК,
+// нужно один раз создать бесплатный проект Firebase и вставить его ключи сюда.
+// Пока поля ниже пустые — сайт работает по-старому, только на одном устройстве.
+// Инструкция, как получить эти значения — в чате.
+const firebaseConfig = {
+  apiKey: "AIzaSyDTb4nnmLEJVI_Yq6GHpX6oLJ8pmIB3Y8o",
+  authDomain: "ywatcher-d2f6a.firebaseapp.com",
+  databaseURL: "https://ywatcher-d2f6a-default-rtdb.firebaseio.com",
+  projectId: "ywatcher-d2f6a",
+  storageBucket: "ywatcher-d2f6a.firebasestorage.app",
+  messagingSenderId: "867524514170",
+  appId: "1:867524514170:web:49c3e23a96224b3aa046c3"
+};
+
+const firebaseEnabled = !!(firebaseConfig.apiKey && firebaseConfig.databaseURL);
+let fbDb = null;
+let fbReady = null;
+
+if(firebaseEnabled){
+  firebase.initializeApp(firebaseConfig);
+  fbDb = firebase.database();
+  // Анонимная авторизация нужна только для того, чтобы правила базы
+  // ("пускать только вошедших") пропускали именно это устройство.
+  fbReady = firebase.auth().signInAnonymously()
+    .then(() => true)
+    .catch(err => {
+      console.error('Firebase auth error:', err);
+      return false;
+    });
+}
+
+// Storage layer: приоритет — облако (Firebase), если настроено; иначе —
+// window.storage внутри просмотрщика артефактов Claude; иначе — localStorage
+// браузера (старое поведение, только на одном устройстве).
 const hasClaudeStorage = typeof window.storage !== 'undefined' && window.storage !== null;
 
 async function storageGet(key){
+  if(firebaseEnabled && fbDb){
+    try{
+      const ok = await fbReady;
+      if(ok){
+        const snap = await fbDb.ref(key).get();
+        if(snap.exists()){
+          const val = snap.val();
+          try{ localStorage.setItem(key, val); }catch(e){}
+          return val;
+        }
+        // В облаке пока пусто — если на этом устройстве уже что-то накопилось
+        // локально (например, это твой старый ПК до включения Firebase),
+        // один раз поднимаем это в облако, чтобы не потерять данные.
+        let local = null;
+        try{ local = localStorage.getItem(key); }catch(e){}
+        if(local){
+          try{ await fbDb.ref(key).set(local); }catch(e){}
+        }
+        return local;
+      }
+    }catch(e){
+      console.error('Firebase read error, использую локальные данные:', e);
+    }
+  }
   if(hasClaudeStorage){
     try{
       const result = await window.storage.get(key, false);
@@ -846,6 +940,16 @@ async function storageGet(key){
 }
 
 async function storageSet(key, value){
+  if(firebaseEnabled && fbDb){
+    try{
+      const ok = await fbReady;
+      if(ok) await fbDb.ref(key).set(value);
+    }catch(e){
+      console.error('Firebase write error:', e);
+    }
+    try{ localStorage.setItem(key, value); }catch(e){}
+    return true;
+  }
   if(hasClaudeStorage){
     try{
       await window.storage.set(key, value, false);
@@ -956,10 +1060,20 @@ async function loadVideos(){
     pinnedAt: null,
     duration: null,
     watchedPct: null,
+    watchedSeconds: 0,
     watchedAt: null,
     category: null,
     ...v
   }));
+  // legacy migration: old versions stored only a final watchedPct (0-100),
+  // set once at archive time. Convert it into an absolute watchedSeconds
+  // value so the new session-based logging can build on top of it.
+  videos.forEach(v => {
+    if((!v.watchedSeconds || v.watchedSeconds === 0) && typeof v.watchedPct === 'number'){
+      const total = getTotalSeconds(v);
+      if(total) v.watchedSeconds = Math.round(total * Math.min(100, Math.max(0, v.watchedPct)) / 100);
+    }
+  });
   render();
 }
 
@@ -1135,8 +1249,13 @@ function buildRow(v, num, isArchived){
   }).join('');
   const categorySelect = `<select class="category-select" data-id="${v.id}">${categoryOptions}</select>`;
 
-  const hasProgress = typeof v.watchedPct === 'number';
-  const pct = hasProgress ? Math.max(0, Math.min(100, v.watchedPct)) : 0;
+  const totalSec = getTotalSeconds(v);
+  const pctOrNull = getWatchedPct(v);
+  const hasProgress = pctOrNull !== null && (v.watchedSeconds || 0) > 0;
+  const pct = pctOrNull || 0;
+  const logWatchBtn = (!isArchived && totalSec > 0)
+    ? `<button class="log-watch-btn" data-id="${v.id}" title="Записать, сколько минут посмотрел только что">▶ Записать просмотр</button>`
+    : '';
 
   row.innerHTML = `
     <div class="row-body">
@@ -1158,10 +1277,11 @@ function buildRow(v, num, isArchived){
       </div>
       <div class="actions">${pinBtn}${actionBtn}</div>
     </div>
-    <div class="watch-progress" data-video-id="${v.id}" style="display:${hasProgress ? 'flex' : 'none'};">
+    <div class="watch-progress" data-video-id="${v.id}" style="display:${(hasProgress || logWatchBtn) ? 'flex' : 'none'};">
       <span class="watch-progress-label">Просмотрено</span>
       <div class="watch-progress-track"><div class="watch-progress-fill" style="width:${pct}%"></div></div>
       <span class="watch-progress-pct">${Math.round(pct)}%</span>
+      ${logWatchBtn}
     </div>
   `;
   return row;
@@ -1200,7 +1320,7 @@ function render(){
         // move to archive
         v.archived = true;
         v.archivedAt = Date.now();
-        const seconds = computeWatchedSeconds(v);
+        const seconds = computeArchiveRemainderSeconds(v);
         if(seconds > 0){
           statsLog.push({
             id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
@@ -1210,6 +1330,7 @@ function render(){
             seconds,
             loggedAt: v.archivedAt
           });
+          v.watchedSeconds = (v.watchedSeconds || 0) + seconds;
           await saveStatsLog();
         }
       }
@@ -1280,6 +1401,57 @@ function render(){
       await saveVideos();
     });
   });
+
+  document.querySelectorAll('.log-watch-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      const v = videos.find(x => x.id === id);
+      if(!v) return;
+
+      const totalSec = getTotalSeconds(v);
+      const alreadyMin = Math.round((v.watchedSeconds || 0) / 60);
+      const input = window.prompt(
+        `Сколько минут ты только что посмотрел (за эту сессию)?\nУже засчитано всего: ${alreadyMin} мин из ${Math.round(totalSec / 60)} мин.`,
+        ''
+      );
+      if(input === null) return;
+      const minutes = parseFloat(input.replace(',', '.'));
+      if(isNaN(minutes) || minutes <= 0){
+        setStatus('Введи положительное число минут.', 'error');
+        setTimeout(() => setStatus(''), 3000);
+        return;
+      }
+
+      let deltaSec = Math.round(minutes * 60);
+      // не даём уйти за пределы длительности видео
+      if(totalSec > 0){
+        const remaining = Math.max(0, totalSec - (v.watchedSeconds || 0));
+        deltaSec = Math.min(deltaSec, remaining);
+      }
+      if(deltaSec <= 0){
+        setStatus('Это видео уже засчитано как полностью просмотренное.', 'ok');
+        setTimeout(() => setStatus(''), 3000);
+        return;
+      }
+
+      const now = Date.now();
+      v.watchedSeconds = (v.watchedSeconds || 0) + deltaSec;
+      v.watchedAt = now;
+      statsLog.push({
+        id: 'log_' + now + '_' + Math.random().toString(36).slice(2, 7),
+        videoId: v.id,
+        title: v.title,
+        category: v.category || null,
+        seconds: deltaSec,
+        loggedAt: now
+      });
+      await saveVideos();
+      await saveStatsLog();
+      render();
+      setStatus(`Записано: ${Math.round(deltaSec / 60)} мин, время сейчас.`, 'ok');
+      setTimeout(() => setStatus(''), 3000);
+    });
+  });
 }
 
 function escapeHtml(str){
@@ -1321,6 +1493,7 @@ async function addVideo(){
     pinned: false,
     pinnedAt: null,
     watchedPct: null,
+    watchedSeconds: 0,
     watchedAt: null,
     category: guessCategory(title)
   });
