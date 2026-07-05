@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Видеотека</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14151a;
+    --panel: #1d1e24;
+    --panel-2: #23242b;
+    --paper: #ece9e2;
+    --paper-dim: #a7a49c;
+    --amber: #e3a24c;
+    --teal: #4e8c82;
+    --line: #33343c;
+    --danger: #c96a5a;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--paper);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 48px 20px 80px;
+  }
+
+  .wrap{ max-width: 780px; margin: 0 auto; }
+
+  /* ---- Tabs ---- */
+  .tabs{
+    display: flex;
+    gap: 28px;
+    margin-bottom: 32px;
+    border-bottom: 1px solid var(--line);
+    padding-top: 12px;
+  }
+  .tab-btn{
+    background: transparent;
+    border: none;
+    color: var(--paper-dim);
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 4px 2px 14px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s ease;
+  }
+  .tab-btn:hover{ color: var(--paper); }
+  .tab-btn.active{ color: var(--amber); border-bottom-color: var(--amber); }
+
+  .tab-page{ display: none; }
+  .tab-page.active{ display: block; }
+
+  .count{
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--paper-dim);
+    font-size: 13px;
+  }
+
+  /* ---- Stats: period switch ---- */
+  .period-switch{
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .period-btn{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--paper-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+  .period-btn:hover{ border-color: var(--amber); color: var(--paper); }
+  .period-btn.active{ background: var(--amber); border-color: var(--amber); color: #1a1408; font-weight: 600; }
+
+  /* ---- Stats: summary ---- */
+  .stats-summary{
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .stat-box{
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .stat-value{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 28px;
+    color: var(--paper);
+    margin-bottom: 4px;
+  }
+  .stat-label{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--paper-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ---- Stats: blocks ---- */
+  .stats-block{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .stats-block-title{
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--paper);
+    margin-bottom: 16px;
+  }
+
+  /* ---- Bar chart ---- */
+  .bar-chart{
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 160px;
+    padding: 4px;
+  }
+  .bar-col{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    min-width: 0;
+  }
+  .bar-track{
+    width: 100%;
+    max-width: 30px;
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    background: var(--panel-2);
+    border-radius: 4px 4px 0 0;
+    overflow: hidden;
+  }
+  .bar-fill{
+    width: 100%;
+    background: var(--amber);
+    border-radius: 4px 4px 0 0;
+    transition: height 0.3s ease;
+    min-height: 2px;
+  }
+  .bar-label{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    color: var(--paper-dim);
+    margin-top: 8px;
+    white-space: nowrap;
+  }
+  .bar-value{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    color: var(--paper-dim);
+    opacity: 0.8;
+  }
+
+  /* ---- Category chart ---- */
+  .cat-row{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .cat-row:last-child{ margin-bottom: 0; }
+  .cat-name{
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--paper);
+    width: 130px;
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cat-track{
+    flex: 1;
+    height: 10px;
+    background: var(--panel-2);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .cat-fill{
+    height: 100%;
+    background: var(--teal);
+    border-radius: 5px;
+  }
+  .cat-value{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--paper-dim);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* ---- Category select on cards ---- */
+  .category-select{
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--paper-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    outline: none;
+    max-width: 160px;
+    cursor: pointer;
+  }
+  .category-select:hover{ border-color: var(--amber); }
+
+  /* ---- Input bar ---- */
+  .loader{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    position: relative;
+  }
+  .loader input{
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+  .loader input::placeholder{ color: var(--paper-dim); }
+  .loader button{
+    background: var(--amber);
+    color: #1a1408;
+    border: none;
+    border-radius: 9px;
+    padding: 0 22px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.12s ease, opacity 0.12s ease;
+  }
+  .loader button:hover{ transform: translateY(-1px); }
+  .loader button:active{ transform: translateY(0); }
+  .loader button:disabled{ opacity: 0.5; cursor: default; transform: none; }
+
+  .status-msg{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    padding: 0 4px 20px;
+    min-height: 18px;
+    color: var(--paper-dim);
+  }
+  .status-msg.error{ color: var(--danger); }
+  .status-msg.ok{ color: var(--teal); }
+
+  /* ---- List ---- */
+  .reel{
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .row{
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    animation: rise 0.35s ease both;
+  }
+  @keyframes rise{
+    from{ opacity: 0; transform: translateY(6px); }
+    to{ opacity: 1; transform: translateY(0); }
+  }
+
+  .row-body{
+    display: flex;
+  }
+
+  .watch-progress{
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px 12px 16px;
+    border-top: 1px dashed var(--line);
+    background: rgba(0,0,0,0.12);
+  }
+  .watch-progress-track{
+    flex: 1;
+    height: 6px;
+    background: var(--panel-2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .watch-progress-fill{
+    height: 100%;
+    background: var(--amber);
+    transition: width 0.4s ease;
+  }
+  .watch-progress-pct{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--paper-dim);
+    min-width: 36px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .watch-progress-label{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--paper-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+  }
+
+  .sprockets{
+    width: 22px;
+    flex-shrink: 0;
+    background: var(--panel-2);
+    background-image: radial-gradient(circle, var(--bg) 3px, transparent 3.5px);
+    background-size: 100% 22px;
+    background-position: center;
+    border-right: 1px dashed var(--line);
+  }
+
+  .num{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    color: var(--paper-dim);
+    font-size: 30px;
+    width: 56px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .row.pinned{
+    border-color: rgba(227,162,76,0.55);
+    background: linear-gradient(90deg, rgba(227,162,76,0.08), var(--panel) 60%);
+  }
+
+  .thumb-frame{
+    flex-shrink: 0;
+    width: 220px;
+    height: 124px;
+    margin: 12px 8px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #0e0f12;
+    border: 1px solid var(--line);
+    position: relative;
+  }
+  .thumb-frame img{
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .thumb-frame a{ display:block; width:100%; height:100%; }
+
+  .duration-badge{
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    background: rgba(10,10,12,0.82);
+    color: #fff;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    padding: 2px 7px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    z-index: 2;
+    transition: background 0.12s ease;
+  }
+  .duration-badge:hover{ background: rgba(227,162,76,0.9); color: #1a1408; }
+
+  .info{
+    flex: 1;
+    min-width: 0;
+    padding: 16px 16px 16px 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+  }
+  .title{
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--paper);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.35;
+  }
+  .title:hover{ color: var(--amber); }
+  .url-line{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .url{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--teal);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 320px;
+  }
+  .url:hover{ text-decoration: underline; }
+
+  .meta-line{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--paper-dim);
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .meta-line span b{
+    color: var(--paper-dim);
+    font-weight: 500;
+  }
+
+  .actions{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-right: 14px;
+    gap: 8px;
+  }
+  .del-btn{
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--paper-dim);
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s ease;
+    flex-shrink: 0;
+  }
+  .del-btn:hover{ background: var(--danger); border-color: var(--danger); color: #fff; }
+
+  .restore-btn{
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--paper-dim);
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s ease;
+    flex-shrink: 0;
+  }
+  .restore-btn:hover{ background: var(--teal); border-color: var(--teal); color: #fff; }
+
+  .pin-btn{
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--paper-dim);
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s ease;
+    flex-shrink: 0;
+  }
+  .pin-btn:hover{ border-color: var(--amber); color: var(--amber); }
+  .pin-btn.active{ background: var(--amber); border-color: var(--amber); color: #1a1408; }
+
+  .api-key-row{ margin-bottom: 18px; }
+  .api-key-toggle{
+    background: transparent;
+    border: none;
+    color: var(--paper-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    cursor: pointer;
+    padding: 2px 4px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--line);
+  }
+  .api-key-toggle:hover{ color: var(--amber); }
+  .api-key-panel{
+    margin-top: 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .api-key-panel p{
+    margin: 0 0 10px;
+    font-size: 12.5px;
+    color: var(--paper-dim);
+    line-height: 1.5;
+  }
+  .api-key-panel .row-inline{
+    display: flex;
+    gap: 8px;
+  }
+  .api-key-panel input{
+    flex: 1;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    padding: 9px 10px;
+    outline: none;
+  }
+  .api-key-panel button{
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 12.5px;
+    border: none;
+    border-radius: 8px;
+    padding: 0 14px;
+    cursor: pointer;
+  }
+  .api-key-panel .save-btn{ background: var(--amber); color: #1a1408; }
+  .api-key-panel .clear-btn{ background: transparent; border: 1px solid var(--line); color: var(--paper-dim); }
+
+  .archive-section{
+    margin-top: 56px;
+    padding-top: 28px;
+    border-top: 1px dashed var(--line);
+  }
+  .archive-toggle{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0 0 20px;
+    color: var(--paper-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    width: 100%;
+  }
+  .archive-toggle .chev{
+    transition: transform 0.2s ease;
+    font-size: 10px;
+  }
+  .archive-toggle.open .chev{ transform: rotate(90deg); }
+  .archive-toggle .line{
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+  .archive-body{ display: none; }
+  .archive-body.open{ display: block; }
+  .archive-body .row{ opacity: 0.82; }
+  .archive-body .thumb-frame{ filter: grayscale(0.35); }
+
+  .empty{
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--paper-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    border: 1px dashed var(--line);
+    border-radius: 14px;
+  }
+  .empty b{ color: var(--paper); font-family:'Fraunces', serif; font-weight:600; font-size: 17px; display:block; margin-bottom:8px;}
+
+  .skeleton{
+    background: linear-gradient(90deg, var(--panel-2) 25%, #2b2c34 37%, var(--panel-2) 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+  }
+  @keyframes shimmer{ 0%{background-position: 100% 0;} 100%{background-position: 0 0;} }
+
+  @media (max-width: 560px){
+    .thumb-frame{ width: 120px; height: 68px; margin: 8px 4px; }
+    .num{ width: 34px; font-size: 22px; }
+    .url{ max-width: 140px; }
+    .title{ font-size: 14.5px; }
+    .meta-line{ gap: 8px; font-size: 10.5px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="tabs" id="tabs">
+    <button class="tab-btn active" data-tab="catalog">Видеотека</button>
+    <button class="tab-btn" data-tab="stats">Статистика</button>
+  </nav>
+
+  <section class="tab-page active" id="tab-catalog">
+    <div class="loader">
+      <input id="urlInput" type="text" placeholder="Вставь ссылку на YouTube и нажми Enter…" autocomplete="off">
+      <button id="addBtn">Добавить</button>
+    </div>
+    <div class="status-msg" id="statusMsg"></div>
+
+    <div class="api-key-row">
+      <button class="api-key-toggle" id="apiKeyToggle">⚙ Настроить получение длительности видео</button>
+      <div class="api-key-panel" id="apiKeyPanel" style="display:none;">
+        <p>Чтобы длительность подтягивалась автоматически, нужен бесплатный ключ YouTube Data API (без него длительность можно вписать вручную, кликнув по бейджу на обложке).</p>
+        <div class="row-inline">
+          <input id="apiKeyInput" type="text" placeholder="Вставь свой YouTube API ключ" autocomplete="off">
+          <button class="save-btn" id="apiKeySave">Сохранить</button>
+          <button class="clear-btn" id="apiKeyClear">Очистить</button>
+        </div>
+        <div class="row-inline" style="margin-top:10px;">
+          <button class="clear-btn" id="refreshDurations" style="flex:1;">Обновить длительность у всех видео</button>
+        </div>
+        <div class="row-inline" style="margin-top:10px;">
+          <button class="clear-btn" id="guessCategoriesBtn" style="flex:1;">Определить категории по названию (у видео без категории)</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="count" id="countLine" style="margin-bottom:14px;"></div>
+
+    <div class="reel" id="reel"></div>
+    <div class="empty" id="emptyState" style="display:none;">
+      <b>Пока пусто</b>
+      Первая ссылка откроет счёт. Вставь её выше.
+    </div>
+
+    <div class="archive-section">
+      <button class="archive-toggle" id="archiveToggle">
+        <span class="line"></span>
+        <span id="archiveLabel">Архив (0)</span>
+        <span class="chev">▶</span>
+        <span class="line"></span>
+      </button>
+      <div class="archive-body" id="archiveBody">
+        <div class="reel" id="archiveReel"></div>
+        <div class="empty" id="archiveEmpty" style="display:none;">
+          В архиве пока ничего нет.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab-page" id="tab-stats">
+    <div class="period-switch" id="periodSwitch"></div>
+
+    <div class="stats-summary">
+      <div class="stat-box">
+        <div class="stat-value" id="statsTotalTime">0 мин</div>
+        <div class="stat-label">Время просмотра</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="statsVideoCount">0</div>
+        <div class="stat-label">Видео просмотрено</div>
+      </div>
+    </div>
+
+    <div class="stats-block">
+      <div class="stats-block-title">Динамика по времени</div>
+      <div class="bar-chart" id="dailyChart"></div>
+    </div>
+
+    <div class="stats-block">
+      <div class="stats-block-title">По категориям</div>
+      <div class="category-chart" id="categoryChart"></div>
+    </div>
+  </section>
+</div>
+
+
+<script>
+const reel = document.getElementById('reel');
+const emptyState = document.getElementById('emptyState');
+const statusMsg = document.getElementById('statusMsg');
+const countLine = document.getElementById('countLine');
+const urlInput = document.getElementById('urlInput');
+const addBtn = document.getElementById('addBtn');
+const archiveToggle = document.getElementById('archiveToggle');
+const archiveBody = document.getElementById('archiveBody');
+const archiveReel = document.getElementById('archiveReel');
+const archiveEmpty = document.getElementById('archiveEmpty');
+const archiveLabel = document.getElementById('archiveLabel');
+const apiKeyToggle = document.getElementById('apiKeyToggle');
+const apiKeyPanel = document.getElementById('apiKeyPanel');
+const apiKeyInput = document.getElementById('apiKeyInput');
+const apiKeySave = document.getElementById('apiKeySave');
+const apiKeyClear = document.getElementById('apiKeyClear');
+const refreshDurationsBtn = document.getElementById('refreshDurations');
+const guessCategoriesBtn = document.getElementById('guessCategoriesBtn');
+const tabsNav = document.getElementById('tabs');
+const periodSwitch = document.getElementById('periodSwitch');
+const statsTotalTime = document.getElementById('statsTotalTime');
+const statsVideoCount = document.getElementById('statsVideoCount');
+const dailyChart = document.getElementById('dailyChart');
+const categoryChart = document.getElementById('categoryChart');
+
+const STORAGE_KEY = 'videos';
+const API_KEY_STORAGE = 'yt_api_key';
+const STATS_KEY = 'stats_log';
+const CATEGORY_OPTIONS = ['Шоу', 'Интервью', 'Музыка', 'Новости', 'Реакция', 'Позновательное','Игры'];
+
+// Ключевые слова для автоопределения категории по названию видео.
+// Ключи объекта должны СОВПАДАТЬ с названиями из CATEGORY_OPTIONS (регистр важен).
+// Слова — в нижнем регистре, ищутся как часть названия видео (подстрокой).
+// Категории проверяются в том порядке, в котором они здесь перечислены —
+// если название подходит под несколько категорий сразу, выберется первая совпавшая.
+const CATEGORY_KEYWORDS = {
+  'Шоу': ['шоу', '6 комнат', 'угадай', 'прятки', 'кто последний','кто найдет','свояк'],
+  'Интервью': ['интервью', 'подкаст'],
+  'Музыка': ['слушает', 'трека'],
+  'Новости': ['вентилятор'],
+  'Реакция': ['смотрит', 'реакция'],
+  'Позновательное': ['топлес'],
+  'Игры': ['играет']
+};
+
+// Ищет первую подходящую категорию по названию видео. Возвращает null, если ничего не подошло —
+// тогда категория останется пустой и её можно будет выбрать вручную.
+function guessCategory(title){
+  if(!title) return null;
+  const t = title.toLowerCase();
+  for(const cat of CATEGORY_OPTIONS){
+    const keywords = CATEGORY_KEYWORDS[cat];
+    if(!keywords) continue;
+    if(keywords.some(kw => t.includes(kw.toLowerCase()))){
+      return cat;
+    }
+  }
+  return null;
+}
+const PERIODS = [
+  { key: 'today', label: 'Сегодня' },
+  { key: '3d', label: '3 дня' },
+  { key: 'week', label: 'Неделя' },
+  { key: 'month', label: 'Месяц' },
+  { key: 'all', label: 'Всё время' }
+];
+let currentPeriod = 'week';
+let videos = [];
+let statsLog = [];
+let ytApiKey = null;
+
+function formatDate(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  const day = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  return `${day}, ${time}`;
+}
+
+function parseDurationToSeconds(text){
+  if(!text) return 0;
+  const parts = text.split(':').map(n => parseInt(n, 10));
+  if(parts.some(isNaN)) return 0;
+  if(parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if(parts.length === 2) return parts[0] * 60 + parts[1];
+  if(parts.length === 1) return parts[0];
+  return 0;
+}
+
+function computeWatchedSeconds(v){
+  const totalSec = v.durationSeconds || parseDurationToSeconds(v.duration);
+  if(!totalSec) return 0;
+  const pct = (typeof v.watchedPct === 'number') ? v.watchedPct : 100;
+  return Math.round(totalSec * (Math.min(100, Math.max(0, pct)) / 100));
+}
+
+function formatHM(totalSeconds){
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.round((totalSeconds % 3600) / 60);
+  if(h > 0) return `${h} ч ${m} мин`;
+  return `${m} мин`;
+}
+
+function formatShortDate(isoDateStr){
+  const [y, m, d] = isoDateStr.split('-');
+  return `${d}.${m}`;
+}
+
+// Storage layer: uses window.storage when running inside Claude's artifact
+// viewer (persists to your account), and falls back to the browser's own
+// localStorage when the file is opened directly (e.g. downloaded and
+// double-clicked, or hosted somewhere) — so saving works either way.
+const hasClaudeStorage = typeof window.storage !== 'undefined' && window.storage !== null;
+
+async function storageGet(key){
+  if(hasClaudeStorage){
+    try{
+      const result = await window.storage.get(key, false);
+      return result ? result.value : null;
+    }catch(e){
+      return null;
+    }
+  }
+  try{
+    return localStorage.getItem(key);
+  }catch(e){
+    return null;
+  }
+}
+
+async function storageSet(key, value){
+  if(hasClaudeStorage){
+    try{
+      await window.storage.set(key, value, false);
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+  try{
+    localStorage.setItem(key, value);
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+function extractVideoId(url){
+  try{
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+      /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+      /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+      /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+      /(?:youtube\.com\/live\/)([a-zA-Z0-9_-]{11})/
+    ];
+    for(const p of patterns){
+      const m = url.match(p);
+      if(m) return m[1];
+    }
+    return null;
+  }catch(e){ return null; }
+}
+
+function setStatus(text, type){
+  statusMsg.textContent = text || '';
+  statusMsg.className = 'status-msg' + (type ? ' ' + type : '');
+}
+
+async function fetchTitle(videoId, originalUrl){
+  // Try YouTube's own oEmbed first
+  try{
+    const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(originalUrl)}&format=json`);
+    if(res.ok){
+      const data = await res.json();
+      if(data && data.title) return data.title;
+    }
+  }catch(e){ /* fall through */ }
+
+  // Fallback proxy
+  try{
+    const res2 = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(originalUrl)}`);
+    if(res2.ok){
+      const data2 = await res2.json();
+      if(data2 && data2.title) return data2.title;
+    }
+  }catch(e){ /* fall through */ }
+
+  return null;
+}
+
+function isoDurationToText(iso){
+  // e.g. PT1H2M10S, PT4M13S, PT45S
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if(!m) return null;
+  const h = parseInt(m[1] || '0', 10);
+  const min = parseInt(m[2] || '0', 10);
+  const s = parseInt(m[3] || '0', 10);
+  if(h > 0){
+    return `${h}:${String(min).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+  return `${min}:${String(s).padStart(2,'0')}`;
+}
+
+async function fetchDuration(videoId){
+  if(!ytApiKey) return { duration: null, error: 'no-key' };
+  try{
+    const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${encodeURIComponent(ytApiKey)}`);
+    if(!res.ok){
+      let reason = `HTTP ${res.status}`;
+      try{
+        const errData = await res.json();
+        if(errData?.error?.message) reason = errData.error.message;
+      }catch(e){ /* ignore parse issues */ }
+      return { duration: null, error: reason };
+    }
+    const data = await res.json();
+    const iso = data?.items?.[0]?.contentDetails?.duration;
+    if(!iso) return { duration: null, error: 'Видео не найдено в ответе API' };
+    return { duration: isoDurationToText(iso), error: null };
+  }catch(e){
+    return { duration: null, error: 'Сетевая ошибка запроса к Google API' };
+  }
+}
+
+async function loadVideos(){
+  try{
+    const raw = await storageGet(STORAGE_KEY);
+    videos = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    videos = [];
+  }
+  // migrate older entries that may lack these fields
+  videos = videos.map(v => ({
+    archived: false,
+    archivedAt: null,
+    addedAt: Date.now(),
+    pinned: false,
+    pinnedAt: null,
+    duration: null,
+    watchedPct: null,
+    watchedAt: null,
+    category: null,
+    ...v
+  }));
+  render();
+}
+
+async function loadStatsLog(){
+  try{
+    const raw = await storageGet(STATS_KEY);
+    statsLog = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    statsLog = [];
+  }
+}
+
+async function saveStatsLog(){
+  try{
+    await storageSet(STATS_KEY, JSON.stringify(statsLog));
+  }catch(e){
+    setStatus('Не удалось сохранить статистику.', 'error');
+  }
+}
+
+async function loadApiKey(){
+  try{
+    const key = await storageGet(API_KEY_STORAGE);
+    ytApiKey = key || null;
+    apiKeyInput.value = ytApiKey || '';
+  }catch(e){
+    ytApiKey = null;
+  }
+}
+
+async function saveVideos(){
+  try{
+    await storageSet(STORAGE_KEY, JSON.stringify(videos));
+  }catch(e){
+    setStatus('Не удалось сохранить список. Попробуй ещё раз.', 'error');
+  }
+}
+
+// ---------- Stats ----------
+
+function getPeriodCutoff(periodKey){
+  const now = new Date();
+  if(periodKey === 'all') return 0;
+  if(periodKey === 'today'){
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  }
+  const daysMap = { '3d': 3, 'week': 7, 'month': 30 };
+  const days = daysMap[periodKey] || 7;
+  return now.getTime() - days * 24 * 3600 * 1000;
+}
+
+function renderPeriodButtons(){
+  periodSwitch.innerHTML = PERIODS.map(p =>
+    `<button class="period-btn ${p.key === currentPeriod ? 'active' : ''}" data-period="${p.key}">${p.label}</button>`
+  ).join('');
+}
+
+function renderBarChart(container, data){
+  if(!data.length){
+    container.innerHTML = '<div class="empty" style="padding:24px; width:100%;">Нет данных за этот период.</div>';
+    return;
+  }
+  const max = Math.max(1, ...data.map(d => d.value));
+  container.innerHTML = data.map(d => {
+    const heightPct = Math.max(2, (d.value / max) * 100);
+    const minutes = Math.round(d.value / 60);
+    return `
+      <div class="bar-col">
+        <div class="bar-value">${d.value > 0 ? minutes + 'м' : ''}</div>
+        <div class="bar-track"><div class="bar-fill" style="height:${heightPct}%"></div></div>
+        <div class="bar-label">${d.label}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCategoryChart(catTotals, totalSeconds){
+  const entries = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+  if(!entries.length){
+    categoryChart.innerHTML = '<div class="empty" style="padding:24px;">Нет данных за этот период.</div>';
+    return;
+  }
+  categoryChart.innerHTML = entries.map(([cat, sec]) => {
+    const pct = totalSeconds ? Math.round((sec / totalSeconds) * 100) : 0;
+    return `
+      <div class="cat-row">
+        <div class="cat-name" title="${escapeHtml(cat)}">${escapeHtml(cat)}</div>
+        <div class="cat-track"><div class="cat-fill" style="width:${pct}%"></div></div>
+        <div class="cat-value">${formatHM(sec)} · ${pct}%</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderStats(){
+  renderPeriodButtons();
+
+  const cutoff = getPeriodCutoff(currentPeriod);
+  const entries = statsLog.filter(e => e.loggedAt >= cutoff);
+  const totalSeconds = entries.reduce((sum, e) => sum + e.seconds, 0);
+
+  statsTotalTime.textContent = totalSeconds > 0 ? formatHM(totalSeconds) : '0 мин';
+  statsVideoCount.textContent = String(entries.length);
+
+  // ---- time buckets ----
+  let chartData = [];
+  if(currentPeriod === 'today'){
+    const buckets = new Array(24).fill(0);
+    entries.forEach(e => { buckets[new Date(e.loggedAt).getHours()] += e.seconds; });
+    chartData = buckets.map((v, h) => ({ label: `${h}ч`, value: v }));
+  }else if(currentPeriod === 'all'){
+    const buckets = {};
+    entries.forEach(e => {
+      const d = new Date(e.loggedAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      buckets[key] = (buckets[key] || 0) + e.seconds;
+    });
+    const keys = Object.keys(buckets).sort();
+    chartData = keys.map(k => ({ label: k.slice(2), value: buckets[k] }));
+  }else{
+    const daysMap = { '3d': 3, 'week': 7, 'month': 30 };
+    const days = daysMap[currentPeriod] || 7;
+    const now = new Date();
+    const buckets = {};
+    const order = [];
+    for(let i = days - 1; i >= 0; i--){
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      buckets[key] = 0;
+      order.push(key);
+    }
+    entries.forEach(e => {
+      const d = new Date(e.loggedAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      if(buckets.hasOwnProperty(key)) buckets[key] += e.seconds;
+    });
+    chartData = order.map(k => ({ label: formatShortDate(k), value: buckets[k] }));
+  }
+  renderBarChart(dailyChart, chartData);
+
+  // ---- category breakdown ----
+  const catTotals = {};
+  entries.forEach(e => {
+    const cat = e.category || 'Без категории';
+    catTotals[cat] = (catTotals[cat] || 0) + e.seconds;
+  });
+  renderCategoryChart(catTotals, totalSeconds);
+}
+
+function buildRow(v, num, isArchived){
+  const row = document.createElement('div');
+  row.className = 'row' + (v.pinned && !isArchived ? ' pinned' : '');
+  const watchUrl = `https://www.youtube.com/watch?v=${v.id}`;
+
+  const pinBtn = isArchived
+    ? ''
+    : `<button class="pin-btn ${v.pinned ? 'active' : ''}" data-id="${v.id}" title="${v.pinned ? 'Открепить' : 'Закрепить сверху'}">📌</button>`;
+
+  const actionBtn = isArchived
+    ? `<button class="restore-btn" data-id="${v.id}" title="Вернуть в каталог">↺</button>
+       <button class="del-btn" data-id="${v.id}" title="Удалить навсегда">✕</button>`
+    : `<button class="del-btn" data-id="${v.id}" title="Отправить в архив">✕</button>`;
+
+  const metaBits = [`<span><b>Добавлено:</b> ${formatDate(v.addedAt)}</span>`];
+  if(isArchived){
+    metaBits.push(`<span><b>В архиве с:</b> ${formatDate(v.archivedAt)}</span>`);
+  }
+
+  const categoryOptions = ['', ...CATEGORY_OPTIONS].map(c => {
+    const label = c === '' ? 'Без категории' : c;
+    const selected = (v.category || '') === c ? 'selected' : '';
+    return `<option value="${c}" ${selected}>${label}</option>`;
+  }).join('');
+  const categorySelect = `<select class="category-select" data-id="${v.id}">${categoryOptions}</select>`;
+
+  const hasProgress = typeof v.watchedPct === 'number';
+  const pct = hasProgress ? Math.max(0, Math.min(100, v.watchedPct)) : 0;
+
+  row.innerHTML = `
+    <div class="row-body">
+      <div class="sprockets"></div>
+      <div class="num">${num}</div>
+      <div class="thumb-frame">
+        <a href="${watchUrl}" target="_blank" rel="noopener">
+          <img src="https://img.youtube.com/vi/${v.id}/hqdefault.jpg" alt="Обложка" loading="lazy">
+        </a>
+        <button class="duration-badge" data-id="${v.id}" title="Нажми, чтобы указать длительность вручную">${escapeHtml(v.duration || '—')}</button>
+      </div>
+      <div class="info">
+        <a class="title" href="${watchUrl}" target="_blank" rel="noopener">${v.pinned && !isArchived ? '📌 ' : ''}${escapeHtml(v.title || 'Без названия')}</a>
+        <div class="url-line">
+          <a class="url" href="${watchUrl}" target="_blank" rel="noopener">${watchUrl}</a>
+        </div>
+        <div class="meta-line">${metaBits.join('')}</div>
+        <div class="meta-line">${categorySelect}</div>
+      </div>
+      <div class="actions">${pinBtn}${actionBtn}</div>
+    </div>
+    <div class="watch-progress" data-video-id="${v.id}" style="display:${hasProgress ? 'flex' : 'none'};">
+      <span class="watch-progress-label">Просмотрено</span>
+      <div class="watch-progress-track"><div class="watch-progress-fill" style="width:${pct}%"></div></div>
+      <span class="watch-progress-pct">${Math.round(pct)}%</span>
+    </div>
+  `;
+  return row;
+}
+
+function render(){
+  const active = videos.filter(v => !v.archived)
+    .slice()
+    .sort((a, b) => (b.pinned === true) - (a.pinned === true));
+  const archived = videos.filter(v => v.archived);
+
+  reel.innerHTML = '';
+  countLine.textContent = active.length ? `В каталоге: ${active.length}` : '';
+  emptyState.style.display = active.length ? 'none' : 'block';
+
+  active.forEach((v, i) => {
+    reel.appendChild(buildRow(v, i + 1, false));
+  });
+
+  archiveReel.innerHTML = '';
+  archiveLabel.textContent = `Архив (${archived.length})`;
+  archiveEmpty.style.display = archived.length ? 'none' : 'block';
+  archived.forEach((v, i) => {
+    archiveReel.appendChild(buildRow(v, i + 1, true));
+  });
+
+  document.querySelectorAll('.del-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      const v = videos.find(x => x.id === id);
+      if(!v) return;
+      if(v.archived){
+        // permanent delete from archive
+        videos = videos.filter(x => x.id !== id);
+      }else{
+        // move to archive
+        v.archived = true;
+        v.archivedAt = Date.now();
+        const seconds = computeWatchedSeconds(v);
+        if(seconds > 0){
+          statsLog.push({
+            id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+            videoId: v.id,
+            title: v.title,
+            category: v.category || null,
+            seconds,
+            loggedAt: v.archivedAt
+          });
+          await saveStatsLog();
+        }
+      }
+      await saveVideos();
+      render();
+    });
+  });
+
+  document.querySelectorAll('.restore-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      const v = videos.find(x => x.id === id);
+      if(!v) return;
+      v.archived = false;
+      v.archivedAt = null;
+      await saveVideos();
+      render();
+    });
+  });
+
+  document.querySelectorAll('.pin-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      const v = videos.find(x => x.id === id);
+      if(!v) return;
+      v.pinned = !v.pinned;
+      v.pinnedAt = v.pinned ? Date.now() : null;
+      await saveVideos();
+      render();
+    });
+  });
+
+  document.querySelectorAll('.duration-badge').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      const v = videos.find(x => x.id === id);
+      if(!v) return;
+
+      if(ytApiKey){
+        const original = btn.textContent;
+        btn.textContent = '…';
+        const result = await fetchDuration(id);
+        if(result.duration){
+          v.duration = result.duration;
+          await saveVideos();
+          render();
+          return;
+        }
+        btn.textContent = original;
+        setStatus(`Не удалось получить длительность через API: ${result.error}. Впиши вручную.`, 'error');
+        setTimeout(() => setStatus(''), 4000);
+      }
+
+      const input = window.prompt('Длительность видео (например 12:34 или 1:02:10):', v.duration || '');
+      if(input === null) return;
+      v.duration = input.trim() || null;
+      await saveVideos();
+      render();
+    });
+  });
+
+  document.querySelectorAll('.category-select').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      const id = sel.getAttribute('data-id');
+      const v = videos.find(x => x.id === id);
+      if(!v) return;
+      v.category = sel.value || null;
+      await saveVideos();
+    });
+  });
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function addVideo(){
+  const raw = urlInput.value.trim();
+  if(!raw){
+    setStatus('Сначала вставь ссылку.', 'error');
+    return;
+  }
+  const id = extractVideoId(raw);
+  if(!id){
+    setStatus('Не похоже на ссылку YouTube. Проверь адрес.', 'error');
+    return;
+  }
+  if(videos.some(v => v.id === id)){
+    setStatus('Это видео уже есть в списке.', 'error');
+    return;
+  }
+
+  addBtn.disabled = true;
+  setStatus('Загружаю данные о видео…');
+
+  const [title, durationResult] = await Promise.all([
+    fetchTitle(id, raw),
+    fetchDuration(id)
+  ]);
+  videos.push({
+    id,
+    title: title || 'Без названия',
+    duration: durationResult.duration || null,
+    addedAt: Date.now(),
+    archived: false,
+    archivedAt: null,
+    pinned: false,
+    pinnedAt: null,
+    watchedPct: null,
+    watchedAt: null,
+    category: guessCategory(title)
+  });
+  await saveVideos();
+  render();
+
+  urlInput.value = '';
+  addBtn.disabled = false;
+
+  if(!title){
+    setStatus('Добавлено (без названия — YouTube не ответил).', 'error');
+  }else if(ytApiKey && durationResult.error && durationResult.error !== 'no-key'){
+    setStatus(`Добавлено. Длительность не подтянулась: ${durationResult.error}`, 'error');
+  }else{
+    setStatus('Добавлено.', 'ok');
+  }
+  setTimeout(() => setStatus(''), 4000);
+}
+
+addBtn.addEventListener('click', addVideo);
+urlInput.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') addVideo();
+});
+
+archiveToggle.addEventListener('click', () => {
+  const isOpen = archiveBody.classList.toggle('open');
+  archiveToggle.classList.toggle('open', isOpen);
+});
+
+apiKeyToggle.addEventListener('click', () => {
+  apiKeyPanel.style.display = apiKeyPanel.style.display === 'none' ? 'block' : 'none';
+});
+
+apiKeySave.addEventListener('click', async () => {
+  const val = apiKeyInput.value.trim();
+  ytApiKey = val || null;
+  await storageSet(API_KEY_STORAGE, ytApiKey || '');
+  setStatus(ytApiKey ? 'Ключ сохранён.' : 'Ключ очищен.', 'ok');
+  setTimeout(() => setStatus(''), 2000);
+});
+
+apiKeyClear.addEventListener('click', async () => {
+  apiKeyInput.value = '';
+  ytApiKey = null;
+  await storageSet(API_KEY_STORAGE, '');
+  setStatus('Ключ очищен.', 'ok');
+  setTimeout(() => setStatus(''), 2000);
+});
+
+refreshDurationsBtn.addEventListener('click', async () => {
+  if(!ytApiKey){
+    setStatus('Сначала сохрани API-ключ выше.', 'error');
+    setTimeout(() => setStatus(''), 2500);
+    return;
+  }
+  const targets = videos.filter(v => !v.duration);
+  if(!targets.length){
+    setStatus('У всех видео уже указана длительность.', 'ok');
+    setTimeout(() => setStatus(''), 2500);
+    return;
+  }
+  refreshDurationsBtn.disabled = true;
+  let updated = 0;
+  let lastError = null;
+  for(const v of targets){
+    setStatus(`Обновляю длительность… (${updated}/${targets.length})`);
+    const result = await fetchDuration(v.id);
+    if(result.duration){
+      v.duration = result.duration;
+      updated++;
+    }else{
+      lastError = result.error;
+    }
+  }
+  await saveVideos();
+  render();
+  refreshDurationsBtn.disabled = false;
+  if(updated === targets.length){
+    setStatus(`Готово: обновлено ${updated} из ${targets.length}.`, 'ok');
+  }else{
+    setStatus(`Обновлено ${updated} из ${targets.length}. Последняя ошибка: ${lastError}`, 'error');
+  }
+  setTimeout(() => setStatus(''), 5000);
+});
+
+guessCategoriesBtn.addEventListener('click', async () => {
+  const targets = videos.filter(v => !v.category);
+  if(!targets.length){
+    setStatus('У всех видео уже указана категория.', 'ok');
+    setTimeout(() => setStatus(''), 2500);
+    return;
+  }
+  let updated = 0;
+  targets.forEach(v => {
+    const guess = guessCategory(v.title);
+    if(guess){
+      v.category = guess;
+      updated++;
+    }
+  });
+  await saveVideos();
+  render();
+  if(updated){
+    setStatus(`Готово: категория определена у ${updated} из ${targets.length} видео. Остальные можно выбрать вручную.`, 'ok');
+  }else{
+    setStatus('Ни одно название не подошло под ключевые слова. Проверь список CATEGORY_KEYWORDS в коде или выбери категории вручную.', 'error');
+  }
+  setTimeout(() => setStatus(''), 5000);
+});
+
+loadApiKey();
+loadVideos();
+loadStatsLog();
+
+tabsNav.addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab-btn');
+  if(!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  if(btn.dataset.tab === 'stats') renderStats();
+});
+
+periodSwitch.addEventListener('click', (e) => {
+  const btn = e.target.closest('.period-btn');
+  if(!btn) return;
+  currentPeriod = btn.dataset.period;
+  renderStats();
+});
+</script>
+</body>
+</html>
