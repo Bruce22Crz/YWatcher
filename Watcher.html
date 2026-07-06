@@ -377,6 +377,23 @@
   .device-btn:hover{ border-color: var(--amber); color: var(--paper); }
   .device-btn.active{ background: var(--amber); border-color: var(--amber); color: var(--ink); }
 
+  .mark-full-btn{
+    display: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    padding: 4px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--paper-dim);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.12s ease, color 0.12s ease;
+  }
+  .mark-full-btn:hover{ border-color: var(--danger); color: var(--paper); }
+  body.show-advanced .mark-full-btn{ display: inline-flex; align-items: center; }
+
   .sprockets{
     width: 22px;
     flex-shrink: 0;
@@ -785,6 +802,9 @@
         <div class="row-inline" style="margin-top:10px;">
           <button class="clear-btn" id="guessCategoriesBtn" style="flex:1;">Определить категории по названию (у видео без категории)</button>
         </div>
+        <div class="row-inline" style="margin-top:10px;">
+          <button class="clear-btn" id="toggleAdvancedBtn" style="flex:1;">Показать доп. кнопки на видео</button>
+        </div>
       </div>
     </div>
   </section>
@@ -835,6 +855,7 @@ const archiveReel = document.getElementById('archiveReel');
 const archiveEmpty = document.getElementById('archiveEmpty');
 const archiveLabel = document.getElementById('archiveLabel');
 const apiKeyToggle = document.getElementById('apiKeyToggle');
+const toggleAdvancedBtn = document.getElementById('toggleAdvancedBtn');
 const apiKeyPanel = document.getElementById('apiKeyPanel');
 const apiKeyInput = document.getElementById('apiKeyInput');
 const apiKeySave = document.getElementById('apiKeySave');
@@ -852,6 +873,7 @@ const deviceChart = document.getElementById('deviceChart');
 const STORAGE_KEY = 'videos';
 const API_KEY_STORAGE = 'yt_api_key';
 const STATS_KEY = 'stats_log';
+const SHOW_ADVANCED_KEY = 'show_advanced';
 const CATEGORY_OPTIONS = ['Шоу', 'Интервью', 'Музыка', 'Новости', 'Реакция', 'Позновательное','Игры'];
 
 // Ключевые слова для автоопределения категории по названию видео.
@@ -1405,7 +1427,10 @@ function buildRow(v, num, isArchived){
   const logWatchBtn = (!isArchived && totalSec > 0)
     ? `<button class="log-watch-btn" data-id="${v.id}" title="Записать, сколько минут посмотрел только что">▶ Записать просмотр</button>`
     : '';
-  const loggingControls = deviceToggle + logWatchBtn;
+  const markFullBtn = (totalSec > 0 && (v.watchedSeconds || 0) < totalSec)
+    ? `<button class="mark-full-btn" data-id="${v.id}" title="Для старых видео, просмотренных ещё до появления статистики — сразу засчитать всю длительность">✓ Отметить как просмотрено полностью</button>`
+    : '';
+  const loggingControls = deviceToggle + logWatchBtn + markFullBtn;
 
   row.innerHTML = `
     <div class="row-body">
@@ -1640,6 +1665,42 @@ function render(){
       setTimeout(() => setStatus(''), 3000);
     });
   });
+
+  document.querySelectorAll('.mark-full-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      const v = videos.find(x => x.id === id);
+      if(!v) return;
+
+      const totalSec = getTotalSeconds(v);
+      if(!totalSec) return;
+      const remaining = Math.max(0, totalSec - (v.watchedSeconds || 0));
+      if(remaining <= 0) return;
+
+      const ok = window.confirm(
+        `Отметить «${v.title}» как полностью просмотренное?\nВ статистику будет добавлено ${Math.round(remaining / 60)} мин с сегодняшней датой.`
+      );
+      if(!ok) return;
+
+      const now = Date.now();
+      v.watchedSeconds = totalSec;
+      v.watchedAt = now;
+      statsLog.push({
+        id: 'log_' + now + '_' + Math.random().toString(36).slice(2, 7),
+        videoId: v.id,
+        title: v.title,
+        category: v.category || null,
+        device: v.device === 'mobile' ? 'mobile' : 'pc',
+        seconds: remaining,
+        loggedAt: now
+      });
+      await saveVideos();
+      await saveStatsLog();
+      render();
+      setStatus('Видео отмечено как полностью просмотренное.', 'ok');
+      setTimeout(() => setStatus(''), 3000);
+    });
+  });
 }
 
 function escapeHtml(str){
@@ -1714,6 +1775,31 @@ archiveToggle.addEventListener('click', () => {
 
 apiKeyToggle.addEventListener('click', () => {
   apiKeyPanel.style.display = apiKeyPanel.style.display === 'none' ? 'block' : 'none';
+});
+
+let showAdvanced = false;
+
+function applyAdvancedSetting(){
+  document.body.classList.toggle('show-advanced', showAdvanced);
+  toggleAdvancedBtn.textContent = showAdvanced
+    ? 'Скрыть доп. кнопки на видео'
+    : 'Показать доп. кнопки на видео';
+}
+
+async function loadAdvancedSetting(){
+  try{
+    const val = await storageGet(SHOW_ADVANCED_KEY);
+    showAdvanced = val === '1';
+  }catch(e){
+    showAdvanced = false;
+  }
+  applyAdvancedSetting();
+}
+
+toggleAdvancedBtn.addEventListener('click', async () => {
+  showAdvanced = !showAdvanced;
+  applyAdvancedSetting();
+  await storageSet(SHOW_ADVANCED_KEY, showAdvanced ? '1' : '0');
 });
 
 apiKeySave.addEventListener('click', async () => {
@@ -1796,6 +1882,7 @@ guessCategoriesBtn.addEventListener('click', async () => {
 loadApiKey();
 loadVideos();
 loadStatsLog();
+loadAdvancedSetting();
 
 tabsNav.addEventListener('click', (e) => {
   const btn = e.target.closest('.tab-btn');
