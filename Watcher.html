@@ -394,6 +394,23 @@
   .mark-full-btn:hover{ border-color: var(--danger); color: var(--paper); }
   body.show-advanced .mark-full-btn{ display: inline-flex; align-items: center; }
 
+  .manual-stats-btn{
+    display: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    padding: 4px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--paper-dim);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.12s ease, color 0.12s ease;
+  }
+  .manual-stats-btn:hover{ border-color: var(--amber); color: var(--paper); }
+  body.show-advanced .manual-stats-btn{ display: inline-flex; align-items: center; }
+
   .sprockets{
     width: 22px;
     flex-shrink: 0;
@@ -1430,7 +1447,10 @@ function buildRow(v, num, isArchived){
   const markFullBtn = (totalSec > 0 && (v.watchedSeconds || 0) < totalSec)
     ? `<button class="mark-full-btn" data-id="${v.id}" title="Для старых видео, просмотренных ещё до появления статистики — сразу засчитать всю длительность">✓ Отметить как просмотрено полностью</button>`
     : '';
-  const loggingControls = deviceToggle + logWatchBtn + markFullBtn;
+  const manualStatsBtn = (totalSec > 0)
+    ? `<button class="manual-stats-btn" data-id="${v.id}" title="Добавить время в статистику отдельно, не трогая текущий прогресс (например, то, что было просмотрено ещё до появления учёта)">➕ Добавить в статистику задним числом</button>`
+    : '';
+  const loggingControls = deviceToggle + logWatchBtn + markFullBtn + manualStatsBtn;
 
   row.innerHTML = `
     <div class="row-body">
@@ -1701,6 +1721,51 @@ function render(){
       setTimeout(() => setStatus(''), 3000);
     });
   });
+
+  document.querySelectorAll('.manual-stats-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      const v = videos.find(x => x.id === id);
+      if(!v) return;
+
+      const minInput = window.prompt(
+        'Сколько минут добавить в статистику для этого видео?\n(Это время, просмотренное ещё до появления учёта — прогресс-бар видео не изменится.)',
+        ''
+      );
+      if(minInput === null) return;
+      const minutes = parseFloat(minInput.replace(',', '.'));
+      if(isNaN(minutes) || minutes <= 0){
+        setStatus('Введи положительное число минут.', 'error');
+        setTimeout(() => setStatus(''), 3000);
+        return;
+      }
+
+      const daysInput = window.prompt(
+        'Сколько дней назад это было примерно?\n(0 — сегодня, 1 — вчера, 7 — неделю назад и т.д.)',
+        '0'
+      );
+      if(daysInput === null) return;
+      const daysAgoRaw = parseFloat(daysInput.replace(',', '.'));
+      const daysAgo = (isNaN(daysAgoRaw) || daysAgoRaw < 0) ? 0 : daysAgoRaw;
+
+      const loggedAt = Date.now() - Math.round(daysAgo * 24 * 3600 * 1000);
+      const seconds = Math.round(minutes * 60);
+
+      statsLog.push({
+        id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        videoId: v.id,
+        title: v.title,
+        category: v.category || null,
+        device: v.device === 'mobile' ? 'mobile' : 'pc',
+        seconds,
+        loggedAt
+      });
+      await saveStatsLog();
+      render();
+      setStatus(`В статистику добавлено ${Math.round(minutes)} мин задним числом.`, 'ok');
+      setTimeout(() => setStatus(''), 3000);
+    });
+  });
 }
 
 function escapeHtml(str){
@@ -1877,6 +1942,33 @@ guessCategoriesBtn.addEventListener('click', async () => {
     setStatus('Ни одно название не подошло под ключевые слова. Проверь список CATEGORY_KEYWORDS в коде или выбери категории вручную.', 'error');
   }
   setTimeout(() => setStatus(''), 5000);
+});
+
+// ---------- Мост для расширения yt-vault-extension ----------
+// Расширение подглядывает прогресс прямо на странице YouTube и присылает его
+// сюда через событие (а не пишет в localStorage напрямую) — так обновление
+// проходит через ту же функцию сохранения, что и ручная запись, и корректно
+// уходит в облако (Firebase), а не только в локальный кэш браузера.
+window.addEventListener('yt-vault-progress', async (e) => {
+  const detail = e.detail || {};
+  const id = detail.id;
+  const pct = detail.pct;
+  if(!id || typeof pct !== 'number') return;
+
+  const v = videos.find(x => x.id === id);
+  if(!v) return; // этого видео нет в каталоге
+
+  const total = getTotalSeconds(v);
+  if(!total) return; // без известной длительности прогресс не посчитать
+
+  const newWatchedSeconds = Math.round(total * Math.min(100, Math.max(0, pct)) / 100);
+  // не откатываем прогресс назад — вдруг это просто пересматривание уже увиденного момента
+  if(newWatchedSeconds <= (v.watchedSeconds || 0)) return;
+
+  v.watchedSeconds = newWatchedSeconds;
+  v.watchedAt = Date.now();
+  await saveVideos();
+  render();
 });
 
 loadApiKey();
