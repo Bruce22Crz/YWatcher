@@ -355,6 +355,28 @@
   }
   .log-watch-btn:hover{ background: var(--amber); color: var(--ink); }
 
+  .device-toggle{
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .device-btn{
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--paper-dim);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  }
+  .device-btn:hover{ border-color: var(--amber); color: var(--paper); }
+  .device-btn.active{ background: var(--amber); border-color: var(--amber); color: var(--ink); }
+
   .sprockets{
     width: 22px;
     flex-shrink: 0;
@@ -790,6 +812,11 @@
       <div class="stats-block-title">По категориям</div>
       <div class="category-chart" id="categoryChart"></div>
     </div>
+
+    <div class="stats-block">
+      <div class="stats-block-title">По устройствам</div>
+      <div class="category-chart" id="deviceChart"></div>
+    </div>
   </section>
 </div>
 
@@ -820,6 +847,7 @@ const statsTotalTime = document.getElementById('statsTotalTime');
 const statsVideoCount = document.getElementById('statsVideoCount');
 const dailyChart = document.getElementById('dailyChart');
 const categoryChart = document.getElementById('categoryChart');
+const deviceChart = document.getElementById('deviceChart');
 
 const STORAGE_KEY = 'videos';
 const API_KEY_STORAGE = 'yt_api_key';
@@ -1139,6 +1167,7 @@ async function loadVideos(){
     watchedSeconds: 0,
     watchedAt: null,
     category: null,
+    device: 'pc',
     ...v
   }));
   // legacy migration: old versions stored only a final watchedPct (0-100),
@@ -1244,6 +1273,29 @@ function renderCategoryChart(catTotals, totalSeconds){
   }).join('');
 }
 
+function renderDeviceChart(deviceTotals, totalSeconds){
+  const order = [
+    { key: 'pc', label: '🖥 ПК' },
+    { key: 'mobile', label: '📱 Телефон' }
+  ];
+  const anyData = (deviceTotals.pc || 0) > 0 || (deviceTotals.mobile || 0) > 0;
+  if(!anyData){
+    deviceChart.innerHTML = '<div class="empty" style="padding:24px;">Нет данных за этот период.</div>';
+    return;
+  }
+  deviceChart.innerHTML = order.map(({ key, label }) => {
+    const sec = deviceTotals[key] || 0;
+    const pct = totalSeconds ? Math.round((sec / totalSeconds) * 100) : 0;
+    return `
+      <div class="cat-row">
+        <div class="cat-name">${label}</div>
+        <div class="cat-track"><div class="cat-fill" style="width:${pct}%"></div></div>
+        <div class="cat-value">${formatHM(sec)} · ${pct}%</div>
+      </div>
+    `;
+  }).join('');
+}
+
 function renderStats(){
   renderPeriodButtons();
 
@@ -1297,6 +1349,16 @@ function renderStats(){
     catTotals[cat] = (catTotals[cat] || 0) + e.seconds;
   });
   renderCategoryChart(catTotals, totalSeconds);
+
+  // ---- device breakdown ----
+  // старые записи, сделанные до появления этой функции, не содержат поле device —
+  // считаем их сделанными с ПК (так использовался сайт до этого).
+  const deviceTotals = { pc: 0, mobile: 0 };
+  entries.forEach(e => {
+    const key = e.device === 'mobile' ? 'mobile' : 'pc';
+    deviceTotals[key] += e.seconds;
+  });
+  renderDeviceChart(deviceTotals, totalSeconds);
 }
 
 function buildRow(v, num, isArchived){
@@ -1329,8 +1391,17 @@ function buildRow(v, num, isArchived){
   const pctOrNull = getWatchedPct(v);
   const hasProgress = pctOrNull !== null && (v.watchedSeconds || 0) > 0;
   const pct = pctOrNull || 0;
-  const logWatchBtn = (!isArchived && totalSec > 0)
-    ? `<button class="log-watch-btn" data-id="${v.id}" title="Записать, сколько минут посмотрел только что">▶ Записать просмотр</button>`
+  const currentDevice = v.device === 'mobile' ? 'mobile' : 'pc';
+  const iconMonitor = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="1.5"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="12" y1="16" x2="12" y2="20"/></svg>`;
+  const iconPhone = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg>`;
+  const loggingControls = (!isArchived && totalSec > 0)
+    ? `
+      <div class="device-toggle" data-id="${v.id}">
+        <button class="device-btn ${currentDevice === 'pc' ? 'active' : ''}" data-device="pc" title="Смотрю на ПК">${iconMonitor}</button>
+        <button class="device-btn ${currentDevice === 'mobile' ? 'active' : ''}" data-device="mobile" title="Смотрю на телефоне">${iconPhone}</button>
+      </div>
+      <button class="log-watch-btn" data-id="${v.id}" title="Записать, сколько минут посмотрел только что">▶ Записать просмотр</button>
+    `
     : '';
 
   row.innerHTML = `
@@ -1350,11 +1421,11 @@ function buildRow(v, num, isArchived){
       </div>
       <div class="actions">${pinBtn}${actionBtn}</div>
     </div>
-    <div class="watch-progress" data-video-id="${v.id}" style="display:${(hasProgress || logWatchBtn) ? 'flex' : 'none'};">
+    <div class="watch-progress" data-video-id="${v.id}" style="display:${(hasProgress || loggingControls) ? 'flex' : 'none'};">
       <span class="watch-progress-label">Просмотрено</span>
       <div class="watch-progress-track"><div class="watch-progress-fill" style="width:${pct}%"></div></div>
       <span class="watch-progress-pct">${Math.round(pct)}%</span>
-      ${logWatchBtn}
+      ${loggingControls}
     </div>
   `;
   return row;
@@ -1410,6 +1481,7 @@ function render(){
             videoId: v.id,
             title: v.title,
             category: v.category || null,
+            device: v.device === 'mobile' ? 'mobile' : 'pc',
             seconds,
             loggedAt: v.archivedAt
           });
@@ -1485,6 +1557,18 @@ function render(){
     });
   });
 
+  document.querySelectorAll('.device-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const wrapper = btn.closest('.device-toggle');
+      const id = wrapper ? wrapper.getAttribute('data-id') : null;
+      const v = videos.find(x => x.id === id);
+      if(!v) return;
+      v.device = btn.getAttribute('data-device') === 'mobile' ? 'mobile' : 'pc';
+      await saveVideos();
+      render();
+    });
+  });
+
   document.querySelectorAll('.log-watch-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-id');
@@ -1525,6 +1609,7 @@ function render(){
         videoId: v.id,
         title: v.title,
         category: v.category || null,
+        device: v.device === 'mobile' ? 'mobile' : 'pc',
         seconds: deltaSec,
         loggedAt: now
       });
@@ -1578,7 +1663,8 @@ async function addVideo(){
     watchedPct: null,
     watchedSeconds: 0,
     watchedAt: null,
-    category: guessCategory(title)
+    category: guessCategory(title),
+    device: 'pc'
   });
   await saveVideos();
   render();
