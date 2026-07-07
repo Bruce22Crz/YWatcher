@@ -1974,35 +1974,9 @@ guessCategoriesBtn.addEventListener('click', async () => {
 });
 
 // ---------- Мост для расширения yt-vault-extension ----------
-// Расширение подглядывает прогресс прямо на странице YouTube и присылает его
-// сюда через событие (а не пишет в localStorage напрямую) — так обновление
-// проходит через ту же функцию сохранения, что и ручная запись, и корректно
-// уходит в облако (Firebase), а не только в локальный кэш браузера.
-window.addEventListener('yt-vault-progress', async (e) => {
-  const detail = e.detail || {};
-  const id = detail.id;
-  const pct = detail.pct;
-  if(!id || typeof pct !== 'number') return;
-
-  const v = videos.find(x => x.id === id);
-  if(!v) return; // этого видео нет в каталоге
-
-  const total = getTotalSeconds(v);
-  if(!total) return; // без известной длительности прогресс не посчитать
-
-  const newWatchedSeconds = Math.round(total * Math.min(100, Math.max(0, pct)) / 100);
-  // не откатываем прогресс назад — вдруг это просто пересматривание уже увиденного момента
-  if(newWatchedSeconds <= (v.watchedSeconds || 0)) return;
-
-  v.watchedSeconds = newWatchedSeconds;
-  v.watchedAt = Date.now();
-  await saveVideos();
-  render();
-});
-
-// catalog-bridge.js (расширение, MAIN world) вызывает эти две функции
-// напрямую — они и есть настоящий "мост". Раньше их тут не было вовсе,
-// поэтому расширение честно слало команды, а сайт их некому было ловить.
+// Расширение (catalog-bridge.js, MAIN world) вызывает эти функции напрямую —
+// это и есть настоящий мост. Обновление идёт через saveVideos()/saveStatsLog(),
+// поэтому корректно уходит и в Firebase, а не только в локальный кэш браузера.
 
 window.__ytVaultAddFromExtension = async function(id, title){
   try{
@@ -2045,12 +2019,30 @@ window.__ytVaultUpdateProgressFromExtension = async function(id, pct){
     if(!total) return; // без известной длительности прогресс не посчитать
 
     const newWatchedSeconds = Math.round(total * Math.min(100, Math.max(0, pct)) / 100);
+    const prevWatchedSeconds = v.watchedSeconds || 0;
     // не откатываем прогресс назад — вдруг это просто пересматривание уже увиденного момента
-    if(newWatchedSeconds <= (v.watchedSeconds || 0)) return;
+    if(newWatchedSeconds <= prevWatchedSeconds) return;
 
+    const deltaSec = newWatchedSeconds - prevWatchedSeconds;
+    const now = Date.now();
     v.watchedSeconds = newWatchedSeconds;
-    v.watchedAt = Date.now();
+    v.watchedAt = now;
+
+    // Раньше этот прирост нигде, кроме самой карточки, не сохранялся, поэтому
+    // проценты просмотра были верными, а минуты во вкладке "Статистика" — нет:
+    // она считается целиком по statsLog, а сюда никто ничего не писал.
+    statsLog.push({
+      id: 'log_' + now + '_' + Math.random().toString(36).slice(2, 7),
+      videoId: v.id,
+      title: v.title,
+      category: v.category || null,
+      device: 'pc', // этот путь приходит только из youtube-tracker.js, который следит за ПК
+      seconds: deltaSec,
+      loggedAt: now
+    });
+
     await saveVideos();
+    await saveStatsLog();
     render();
   }catch(e){
     console.error('yt-vault: ошибка обновления прогресса из расширения:', e);
