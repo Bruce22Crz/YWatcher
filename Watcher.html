@@ -1239,6 +1239,27 @@ async function saveStatsLog(){
   }
 }
 
+// Приводит категории в уже сохранённой истории (statsLog) в соответствие
+// с текущей категорией видео (videos). Записи статистики — это "снимки",
+// сделанные в момент архивации/просмотра, поэтому смена категории у видео
+// сама по себе их не трогает. Эта функция чинит уже существующие записи,
+// подставляя актуальную категорию по videoId, включая случай, когда видео
+// уже в архиве. Возвращает true, если что-то реально поменялось (значит,
+// историю стоит сохранить через saveStatsLog()).
+function syncStatsLogCategories(){
+  let changed = false;
+  statsLog.forEach(entry => {
+    const v = videos.find(x => x.id === entry.videoId);
+    if(!v) return; // видео удалено насовсем — снимок категории оставляем как есть
+    const newCat = v.category || null;
+    if(entry.category !== newCat){
+      entry.category = newCat;
+      changed = true;
+    }
+  });
+  return changed;
+}
+
 async function loadApiKey(){
   try{
     const key = await storageGet(API_KEY_STORAGE);
@@ -1314,15 +1335,19 @@ function renderCategoryChart(catTotals, totalSeconds){
 }
 
 function renderDeviceChart(deviceTotals, totalSeconds){
-  const order = [
-    { key: 'pc', label: '🖥 ПК' },
-    { key: 'mobile', label: '📱 Телефон' }
-  ];
+  const labels = {
+    pc: '🖥 ПК',
+    mobile: '📱 Телефон'
+  };
   const anyData = (deviceTotals.pc || 0) > 0 || (deviceTotals.mobile || 0) > 0;
   if(!anyData){
     deviceChart.innerHTML = '<div class="empty" style="padding:24px;">Нет данных за этот период.</div>';
     return;
   }
+  // сортируем по убыванию, как и в диаграмме категорий, а не в фиксированном порядке
+  const order = Object.keys(labels)
+    .map(key => ({ key, label: labels[key] }))
+    .sort((a, b) => (deviceTotals[b.key] || 0) - (deviceTotals[a.key] || 0));
   deviceChart.innerHTML = order.map(({ key, label }) => {
     const sec = deviceTotals[key] || 0;
     const pct = totalSeconds ? Math.round((sec / totalSeconds) * 100) : 0;
@@ -1603,6 +1628,9 @@ function render(){
       if(!v) return;
       v.category = sel.value || null;
       await saveVideos();
+      // Подтягиваем новую категорию и в уже записанную статистику по этому
+      // видео — иначе она так и осталась бы "Без категории" в разделе "Статистика".
+      if(syncStatsLogCategories()) await saveStatsLog();
     });
   });
 
@@ -2029,9 +2057,15 @@ window.__ytVaultUpdateProgressFromExtension = async function(id, pct){
   }
 };
 
+async function initCatalogAndStats(){
+  // videos и statsLog грузятся из разных ключей хранилища — ждём оба,
+  // прежде чем сверять категории между ними.
+  await Promise.all([loadVideos(), loadStatsLog()]);
+  if(syncStatsLogCategories()) await saveStatsLog();
+}
+
 loadApiKey();
-loadVideos();
-loadStatsLog();
+initCatalogAndStats();
 loadAdvancedSetting();
 
 tabsNav.addEventListener('click', (e) => {
