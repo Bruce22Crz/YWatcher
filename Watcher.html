@@ -1972,6 +1972,63 @@ window.addEventListener('yt-vault-progress', async (e) => {
   render();
 });
 
+// catalog-bridge.js (расширение, MAIN world) вызывает эти две функции
+// напрямую — они и есть настоящий "мост". Раньше их тут не было вовсе,
+// поэтому расширение честно слало команды, а сайт их некому было ловить.
+
+window.__ytVaultAddFromExtension = async function(id, title){
+  try{
+    if(!id) return;
+    if(videos.some(v => v.id === id)) return; // уже есть — не дублируем
+
+    setStatus('Добавляю видео из расширения…');
+    const durationResult = await fetchDuration(id);
+    videos.push({
+      id,
+      title: title || 'Без названия',
+      duration: durationResult.duration || null,
+      addedAt: Date.now(),
+      archived: false,
+      archivedAt: null,
+      pinned: false,
+      pinnedAt: null,
+      watchedPct: null,
+      watchedSeconds: 0,
+      watchedAt: null,
+      category: guessCategory(title),
+      device: 'pc'
+    });
+    await saveVideos();
+    render();
+    setStatus('Добавлено из расширения.', 'ok');
+    setTimeout(() => setStatus(''), 3000);
+  }catch(e){
+    console.error('yt-vault: ошибка добавления видео из расширения:', e);
+  }
+};
+
+window.__ytVaultUpdateProgressFromExtension = async function(id, pct){
+  try{
+    if(!id || typeof pct !== 'number') return;
+    const v = videos.find(x => x.id === id);
+    if(!v) return; // этого видео нет в каталоге
+
+    const total = getTotalSeconds(v);
+    if(!total) return; // без известной длительности прогресс не посчитать
+
+    const newWatchedSeconds = Math.round(total * Math.min(100, Math.max(0, pct)) / 100);
+    // не откатываем прогресс назад — вдруг это просто пересматривание уже увиденного момента
+    if(newWatchedSeconds <= (v.watchedSeconds || 0)) return;
+
+    v.watchedSeconds = newWatchedSeconds;
+    v.watchedAt = Date.now();
+    await saveVideos();
+    render();
+  }catch(e){
+    console.error('yt-vault: ошибка обновления прогресса из расширения:', e);
+  }
+};
+
 loadApiKey();
 loadVideos();
 loadStatsLog();
